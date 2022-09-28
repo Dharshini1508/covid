@@ -1,0 +1,56 @@
+from google.colab import drive
+drive.mount("/content/drive")
+
+import pandas as pd 
+input_folder="/content/drive/MyDrive/DAQ_Dataset/CovidImages"
+
+from tensorflow.keras.layers import *
+from tensorflow.keras.models import *
+
+Model =Sequential ( )
+
+Model .add(Conv2D(32,kernel_size= (3,3),activation="relu",input_shape=(224,224,3)))
+Model.add(MaxPooling2D(pool_size=(2, 2)))
+Model.add(Dropout(0.25))
+
+Model.add(Conv2D(64,kernel_size=(3,3),activation="relu"))
+Model.add(MaxPooling2D(pool_size=(2,2)))
+Model.add(Dropout(0.25))
+
+Model.add(Conv2D(128,kernel_size=(3,3),activation="relu"))
+Model.add(MaxPooling2D(pool_size=(2,2)))
+Model.add(Dropout(0.50))
+
+Model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
+
+from tensorflow.keras.preprocessing import image
+train_dataset= image.ImageDataGenerator(rescale=1./255, shear_range=0.2,zoom_range=0.2,horizontal_flip=True)
+
+test_dataset= image.ImageDataGenerator(rescale=1./225)
+
+train_generator = train_dataset.flow_from_directory("/content/drive/MyDrive/DAQ_Dataset/CovidImages/train_dataset ",
+                                                    target_size=(224,224),
+                                                    batch_size= 12,
+                                                    class_mode='binary')
+validation_generaor= test_dataset.flow_from_directory("/content/drive/MyDrive/DAQ_Dataset/CovidImages/test_dataset ",
+                                                      target_size=(224,224),
+                                                      batch_size= 12,
+                                                      class_mode='binary',)
+Model.add(Dense(10, activation = 'relu'))
+
+CNN_Model=Model.save("CovidCNN.h5")
+#Train the model 
+
+history= Model.fit_generator(train_generator, steps_per_epoch=2,epochs=20)
+                             
+
+
+import numpy as np
+img= image.load_img('/content/drive/MyDrive/DAQ_Dataset/CovidImages/test_dataset /covid/Copy of 1-s2.0-S0929664620300449-gr2_lrg-a.jpg',target_size=(224,224))
+img=image.img_to_array(img)
+img=np.expand_dims(img,axis=0)
+y_pred= Model.predict(img)
+if y_pred[0][0]==1:
+  print("Negative")
+else:
+  print("Positive")
